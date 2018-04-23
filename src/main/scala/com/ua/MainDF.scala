@@ -15,8 +15,8 @@ object MainDF {
 
     //entry point into all functionality in Spark is the SparkSession class
     val sparkSession = SparkSession.builder.
-      master("local")
-      .appName("spark session example")
+      master("yarn")
+      .appName("myApp")
       .getOrCreate()
 
     //user defined schema
@@ -97,5 +97,7 @@ object MainDF {
       .option("header", "true")
       .mode("append")
       .save("report1")
+
+    sparkSession.stop()
   }
 }
