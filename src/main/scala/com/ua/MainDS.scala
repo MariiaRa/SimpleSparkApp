@@ -14,8 +14,8 @@ object MainDS {
     val file = args(3)
 
     val sparkSession = SparkSession.builder.
-      master("local")
-      .appName("spark session example")
+      master("yarn")
+      .appName("myApp")
       .getOrCreate()
 
     import sparkSession.implicits._
@@ -47,8 +47,8 @@ object MainDS {
     // val dataSet = DFCsv.as[CropsData]
 
     val DS2 = noNullDSCsv.map(row => CropsData(row.getAs[String](0).trim, row.getAs[Integer](1), row.getAs[String](2),
-                              row.getAs[Integer](3), row.getAs[String](4), row.getAs[Long](5), row.getAs[String](6),
-                              row.getAs[String](7)))
+      row.getAs[Integer](3), row.getAs[String](4), row.getAs[Long](5), row.getAs[String](6),
+      row.getAs[String](7)))
 
     //filter out regions
     val countries = DS2.filter(crop => !crop.country_or_area.equals("World")
