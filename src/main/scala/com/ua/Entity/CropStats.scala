@@ -1,24 +1,13 @@
-package com.ua
+package com.ua.Entity
 
-import com.ua.Entity.CropsData
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 
-object MainDS {
-  def main(args: Array[String]): Unit = {
+class CropStats {
 
-    val category = args(0)
-    val year = args(1).toInt
-    val country = args(2)
-    val file = args(3)
-
-    val sparkSession = SparkSession.builder.
-      master("yarn")
-      .appName("myApp")
-      .getOrCreate()
-
-    import sparkSession.implicits._
+  def createDS(ss: SparkSession, file: String): Dataset[CropsData] = {
+    import ss.implicits._
 
     //user defined schema
     val customSchema = StructType(Array(
@@ -32,7 +21,7 @@ object MainDS {
       StructField("category", StringType, true)))
 
     //create DataFrames
-    val DFCsv = sparkSession.read.format("csv")
+    val DFCsv = ss.read.format("csv")
       .option("sep", ",")
       .option("header", "true")
       .schema(customSchema)
@@ -59,50 +48,32 @@ object MainDS {
       && !crop.country_or_area.equals("Small Island Developing States") && !crop.country_or_area.contains("Countries")
       && !crop.country_or_area.contains("countries") && !crop.country_or_area.equals("Low Income Food Deficit Countries")
     )
+    countries
+  }
 
-    //total production
-    val totalProduction = countries.filter(crop => crop.element == "Production Quantity" && crop.category.equals(category) &&
+  def getTotalProduction(input: Dataset[CropsData], category: String, year: Int): DataFrame = {
+    input.filter(crop => crop.element == "Production Quantity" && crop.category.equals(category) &&
       crop.year == year).agg(sum("value").alias("Total_Production"))
+  }
 
+  def getMinMaxAvd(input: Dataset[CropsData], category: String, country: String): DataFrame = {
     //  min, max, avg
-    val minMaxAvg = countries.filter(crop => crop.element == "Production Quantity"
+    input.filter(crop => crop.element == "Production Quantity"
       && crop.category.equals(category)
       && crop.country_or_area == country)
       .agg(min("value").alias("Min Production"), max("value").alias("Max Production"), avg("value").alias("Average Production"))
+  }
 
-    //top productive year in world
-    val topProducers = countries.filter(crop => crop.element == "Production Quantity"
+  def getTopProducers(input: Dataset[CropsData], category: String, year: Int): Dataset[CropsData] = { //top productive year in world
+    input.filter(crop => crop.element == "Production Quantity"
       && crop.category.equals(category)
       && crop.year == year).sort(desc("value"))
+  }
 
+  def getTopYear(input: Dataset[CropsData], category: String, country: String): Dataset[CropsData] = {
     //top productive year by country
-    val topYear = countries.filter(crop => crop.element == "Production Quantity"
+    input.filter(crop => crop.element == "Production Quantity"
       && crop.category.equals(category)
       && crop.country_or_area == country).sort(desc("value"))
-
-    minMaxAvg.write
-      .format("csv")
-      .option("header", "true")
-      .save("report2")
-
-    totalProduction.write
-      .format("csv")
-      .mode("append")
-      .option("header", "true")
-      .save("report2")
-
-    topYear
-      .limit(1)
-      .write.format("csv")
-      .option("header", "true")
-      .mode("append")
-      .save("report2")
-
-    topProducers
-      .limit(10)
-      .write.format("csv")
-      .option("header", "true")
-      .mode("append")
-      .save("report2")
   }
 }
