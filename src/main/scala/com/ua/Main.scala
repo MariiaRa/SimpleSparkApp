@@ -5,7 +5,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.SparkSession
 
-
 object Main {
   def main(args: Array[String]): Unit = {
     val category = args(0)
@@ -14,8 +13,8 @@ object Main {
     val file = args(3)
 
     val sparkSession = SparkSession.builder.
-      master("local")
-      .appName("myApp")
+      master("yarn")
+      .appName("simpleSparkApp")
       .getOrCreate()
 
     val statistics = new CropStats
@@ -26,7 +25,7 @@ object Main {
     minMaxAvg.write
       .format("csv")
       .option("header", "true")
-      .option("delimiter","\t")
+      .option("delimiter", "\t")
       .save("report")
 
     val topProducers = statistics.getTopProducers(input, category, year)
@@ -34,7 +33,7 @@ object Main {
       .limit(10)
       .write.format("csv")
       .option("header", "true")
-      .option("delimiter","\t")
+      .option("delimiter", "\t")
       .mode("append")
       .save("report")
 
@@ -43,7 +42,7 @@ object Main {
       .limit(1)
       .write.format("csv")
       .option("header", "true")
-      .option("delimiter","\t")
+      .option("delimiter", "\t")
       .mode("append")
       .save("report")
 
@@ -52,11 +51,17 @@ object Main {
       .format("csv")
       .mode("append")
       .option("header", "true")
-      .option("delimiter","\t")
+      .option("delimiter", "\t")
       .save("report")
 
     val src = "hdfs://alpha.gemelen.net:8020/user/hdfs/report"
-    val dst = "hdfs://alpha.gemelen.net:8020/user/hdfs/sparkAppReport.txt"
+    val dst = "hdfs://alpha.gemelen.net:8020/user/hdfs/sparkAppReport1.txt"
+
+    /**
+      *
+      * @param src path directory with files to merge
+      * @param dst path to file destination
+      */
 
     def merge(src: String, dst: String): Unit = {
       val srcPath: Path = new Path(src)
@@ -68,6 +73,8 @@ object Main {
     }
 
     merge(src, dst)
+
+    sparkSession.stop()
 
   }
 }
