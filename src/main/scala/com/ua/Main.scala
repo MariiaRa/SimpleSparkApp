@@ -26,6 +26,7 @@ object Main {
     minMaxAvg.write
       .format("csv")
       .option("header", "true")
+      .option("delimiter","\t")
       .save("report")
 
     val topProducers = statistics.getTopProducers(input, category, year)
@@ -33,6 +34,7 @@ object Main {
       .limit(10)
       .write.format("csv")
       .option("header", "true")
+      .option("delimiter","\t")
       .mode("append")
       .save("report")
 
@@ -41,6 +43,7 @@ object Main {
       .limit(1)
       .write.format("csv")
       .option("header", "true")
+      .option("delimiter","\t")
       .mode("append")
       .save("report")
 
@@ -49,6 +52,7 @@ object Main {
       .format("csv")
       .mode("append")
       .option("header", "true")
+      .option("delimiter","\t")
       .save("report")
 
     val src = "hdfs://alpha.gemelen.net:8020/user/hdfs/report"
