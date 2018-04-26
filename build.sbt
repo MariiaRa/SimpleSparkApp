@@ -27,7 +27,7 @@ dockerfile in docker := {
     from("sparkcontainer:latest")
     add(jarFile, "/mainDir/app.jar")
     expose(4040)
-    entryPoint("/mainDir/spark/startSpark.sh", "apples", "2001", "Egypt", "hdfs://alpha.gemelen.net:8020/storage/fao_data_crops_data.csv")
+    entryPoint("/mainDir/spark/startSpark.sh", "apples", "2001", "Egypt", "/storage/fao_data_crops_data.csv")
   }
 }
 
