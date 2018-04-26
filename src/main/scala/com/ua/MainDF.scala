@@ -9,27 +9,31 @@ import org.apache.spark.sql.types._
 object MainDF {
   def main(args: Array[String]): Unit = {
 
-    //get args
     val category = args(0)
     val year = args(1)
     val country = args(2)
     val file = args(3)
 
-    val sparkSession = SparkSession.builder.
-      master("yarn")
+    val regions: List[String] = List("World", "Central America", "Central Asia", "Americas", "Eastern Africa", "Eastern Asia",
+      "Eastern Europe", "European Union", "Europe", "Australia and New Zealand", "Middle Africa", "Net Food Importing Developing Countries",
+      "Small Island Developing States", "Least Developed Countries", "countries", "Low Income Food Deficit Countries",
+      "Northern Africa", "Northern America", "Northern Europe", "South Africa", "South America", "South-Eastern Asia", "Southern Africa",
+      "Southern Asia", "Southern Europe", "Western Africa", "Western Asia", "Western Europe", "Western Sahara")
+
+    val sparkSession = SparkSession.builder
       .appName("simpleSparkApp")
       .getOrCreate()
 
     //user defined schema
-    val customSchema = StructType(Array(
-      StructField("country_or_area", StringType, true),
-      StructField("element_code", IntegerType, true),
-      StructField("element", StringType, true),
-      StructField("year", IntegerType, true),
-      StructField("unit", StringType, true),
-      StructField("value", LongType, true),
-      StructField("value_footnotes", StringType, true),
-      StructField("category", StringType, true)))
+    val customSchema = new StructType()
+      .add("country_or_area", StringType, true)
+      .add("element_code", IntegerType, true)
+      .add("element", StringType, true)
+      .add("year", IntegerType, true)
+      .add("unit", StringType, true)
+      .add("value", LongType, true)
+      .add("value_footnotes", StringType, true)
+      .add("category", StringType, true)
 
     //create DataFrames
     val DFCsv = sparkSession.read.format("csv")
@@ -47,19 +51,7 @@ object MainDF {
     val DFCsvTrimmed = DFCsvSelect.withColumn("Country", trim(DFCsvSelect("Country")))
 
     //filter out regions
-    val countries = DFCsvTrimmed.where(
-      !$"Country".contains("World") &&
-        !DFCsvTrimmed.col("Country").contains("Asia") &&
-        !DFCsvTrimmed.col("Country").contains("Africa") &&
-        !DFCsvTrimmed.col("Country").contains("America") &&
-        !DFCsvTrimmed.col("Country").contains("Americas") &&
-        !DFCsvTrimmed.col("Country").contains("Europe") &&
-        !DFCsvTrimmed.col("Country").contains("European Union") &&
-        !DFCsvTrimmed.col("Country").contains("Australia and New Zealand") &&
-        !DFCsvTrimmed.col("Country").like("%Countries") &&
-        !DFCsvTrimmed.col("Country").like("%countries") &&
-        !DFCsvTrimmed.col("Country").contains("Small Island Developing States")
-    )
+    val countries = DFCsvTrimmed.filter(row => !regions.contains(row.getAs[String]("Country")))
 
     //total production
     val totalProduction = countries.where($"category" === category && $"year" === year).agg(sum("value").cast("long").alias("Total_Production"))
@@ -103,8 +95,8 @@ object MainDF {
       .mode("append")
       .save("report")
 
-    val src = "hdfs://alpha.gemelen.net:8020/user/hdfs/report"
-    val dst = "hdfs://alpha.gemelen.net:8020/user/hdfs/sparkAppReport2.txt"
+    val src = "/user/hdfs/report"
+    val dst = "/user/hdfs/sparkAppReport2.txt"
 
     /**
       *
