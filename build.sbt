@@ -14,14 +14,15 @@ val sparkVersion = "2.3.0"
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion,
   "org.apache.spark" %% "spark-sql" % sparkVersion,
-  "com.holdenkarau" %% "spark-testing-base" % "2.3.0_0.9.0" % Test)
+  "com.holdenkarau" %% "spark-testing-base" % "2.3.0_0.9.0" % Test,
+  "org.apache.hadoop" % "hadoop-hdfs" % "2.5.2")
 
 enablePlugins(sbtdocker.DockerPlugin, JavaAppPackaging)
 
 dockerfile in docker := {
 
   val jarFile: File = sbt.Keys.`package`.in(Compile, packageBin).value
-  
+
   new Dockerfile {
     from("sparkcontainer:latest")
     add(jarFile, "/mainDir/app.jar")
