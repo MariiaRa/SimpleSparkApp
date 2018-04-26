@@ -1,7 +1,10 @@
 package com.ua
 
 import com.ua.Entity.CropStats
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.SparkSession
+
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -47,5 +50,20 @@ object Main {
       .mode("append")
       .option("header", "true")
       .save("report")
+
+    val src = "hdfs://alpha.gemelen.net:8020/user/hdfs/report"
+    val dst = "hdfs://alpha.gemelen.net:8020/user/hdfs/sparkAppReport.txt"
+
+    def merge(src: String, dst: String): Unit = {
+      val srcPath: Path = new Path(src)
+      val dstPath: Path = new Path(dst)
+      val hadoopConfig = new Configuration()
+      val fs = FileSystem.get(new Configuration())
+      val hdfs = FileSystem.get(hadoopConfig)
+      FileUtil.copyMerge(hdfs, srcPath, hdfs, dstPath, true, hadoopConfig, "\n")
+    }
+
+    merge(src, dst)
+
   }
 }
