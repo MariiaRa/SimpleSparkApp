@@ -1,5 +1,7 @@
 package com.ua
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -13,10 +15,9 @@ object MainDF {
     val country = args(2)
     val file = args(3)
 
-    //entry point into all functionality in Spark is the SparkSession class
     val sparkSession = SparkSession.builder.
-      master("local")
-      .appName("myApp")
+      master("yarn")
+      .appName("simpleSparkApp")
       .getOrCreate()
 
     //user defined schema
@@ -31,7 +32,7 @@ object MainDF {
       StructField("category", StringType, true)))
 
     //create DataFrames
-    val animalDFCsv = sparkSession.read.format("csv")
+    val DFCsv = sparkSession.read.format("csv")
       .option("sep", ",")
       .option("header", "true")
       .schema(customSchema)
@@ -40,32 +41,32 @@ object MainDF {
     import sparkSession.implicits._
 
     //select columns of interes
-    val selected = animalDFCsv.select($"country_or_area".alias("Country"), $"year".alias("Year"), $"value".alias("Value"), $"category".alias("Category"))
+    val DFCsvSelect = DFCsv.select($"country_or_area".alias("Country"), $"year".alias("Year"), $"value".alias("Value"), $"category".alias("Category"))
 
     //trim
-    val animalDFCsvTrimmed = selected.withColumn("Country", trim(selected("Country")))
+    val DFCsvTrimmed = DFCsvSelect.withColumn("Country", trim(DFCsvSelect("Country")))
 
     //filter out regions
-    val countries = animalDFCsvTrimmed.where(
+    val countries = DFCsvTrimmed.where(
       !$"Country".contains("World") &&
-        !animalDFCsvTrimmed.col("Country").contains("Asia") &&
-        !animalDFCsvTrimmed.col("Country").contains("Africa") &&
-        !animalDFCsvTrimmed.col("Country").contains("America") &&
-        !animalDFCsvTrimmed.col("Country").contains("Americas") &&
-        !animalDFCsvTrimmed.col("Country").contains("Europe") &&
-        !animalDFCsvTrimmed.col("Country").contains("European Union") &&
-        !animalDFCsvTrimmed.col("Country").contains("Australia and New Zealand") &&
-        !animalDFCsvTrimmed.col("Country").like("%Countries") &&
-        !animalDFCsvTrimmed.col("Country").like("%countries") &&
-        !animalDFCsvTrimmed.col("Country").contains("Small Island Developing States")
+        !DFCsvTrimmed.col("Country").contains("Asia") &&
+        !DFCsvTrimmed.col("Country").contains("Africa") &&
+        !DFCsvTrimmed.col("Country").contains("America") &&
+        !DFCsvTrimmed.col("Country").contains("Americas") &&
+        !DFCsvTrimmed.col("Country").contains("Europe") &&
+        !DFCsvTrimmed.col("Country").contains("European Union") &&
+        !DFCsvTrimmed.col("Country").contains("Australia and New Zealand") &&
+        !DFCsvTrimmed.col("Country").like("%Countries") &&
+        !DFCsvTrimmed.col("Country").like("%countries") &&
+        !DFCsvTrimmed.col("Country").contains("Small Island Developing States")
     )
 
     //total production
     val totalProduction = countries.where($"category" === category && $"year" === year).agg(sum("value").cast("long").alias("Total_Production"))
 
-    //  min, max, avg
-    val minMaxAvg = selected.where($"category" === category && $"Country" === country).agg(min("value").cast("long").alias("Min Production"), max("value").cast("long").alias("Max Production"), avg("value").cast("long").alias("Average Production"))
-    //  selected.where(($"category" === "chickens" && $"Country" === "Egypt")).agg(min("value"), max("value"), avg("value")).show()
+    //min, max, avg
+    val minMaxAvg = DFCsvSelect.where($"category" === category && $"Country" === country).agg(min("value").cast("long").alias("Min_Production"), max("value").cast("long").alias("Max_Production"), avg("value").cast("long").alias("Average_Production"))
+
 
     //top productive year in world
     val topProducers = countries.where($"category" === category && $"year" === year).sort(desc("value"))
@@ -76,27 +77,51 @@ object MainDF {
     minMaxAvg.write
       .format("csv")
       .option("header", "true")
-      .save("report1")
+      .option("delimiter", "\t")
+      .save("report")
 
     totalProduction.write
       .format("csv")
       .mode("append")
       .option("header", "true")
-      .save("report1")
+      .option("delimiter", "\t")
+      .save("report")
 
     topYear
       .limit(1)
       .write.format("csv")
       .option("header", "true")
+      .option("delimiter", "\t")
       .mode("append")
-      .save("report1")
+      .save("report")
 
     topProducers
       .limit(10)
       .write.format("csv")
       .option("header", "true")
+      .option("delimiter", "\t")
       .mode("append")
-      .save("report1")
+      .save("report")
+
+    val src = "hdfs://alpha.gemelen.net:8020/user/hdfs/report"
+    val dst = "hdfs://alpha.gemelen.net:8020/user/hdfs/sparkAppReport2.txt"
+
+    /**
+      *
+      * @param src path directory with files to merge
+      * @param dst path to file destination
+      */
+
+    def merge(src: String, dst: String): Unit = {
+      val srcPath: Path = new Path(src)
+      val dstPath: Path = new Path(dst)
+      val hadoopConfig = new Configuration()
+      val fs = FileSystem.get(new Configuration())
+      val hdfs = FileSystem.get(hadoopConfig)
+      FileUtil.copyMerge(hdfs, srcPath, hdfs, dstPath, true, hadoopConfig, "\n")
+    }
+
+    merge(src, dst)
 
     sparkSession.stop()
   }
