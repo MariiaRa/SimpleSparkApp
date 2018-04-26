@@ -70,7 +70,7 @@ object MainDF {
     //top productive year in world
     val topProducers = countries.where($"category" === category && $"year" === year).sort(desc("value"))
 
-        //top productive year by country
+    //top productive year by country
     val topYear = countries.where($"category" === category && $"Country" === country).sort(desc("value"))
 
     minMaxAvg.write
