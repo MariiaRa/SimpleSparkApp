@@ -61,7 +61,7 @@ class CropStats {
     input.filter(crop => crop.element == "Production Quantity"
       && crop.category.equals(category)
       && crop.country_or_area == country)
-      .agg(min("value").alias("Min Production"), max("value").alias("Max Production"), avg("value").alias("Average Production"))
+      .agg(min("value").alias("Min_Production"), max("value").alias("Max_Production"), avg("value").alias("Average_Production"))
   }
 
   def getTopProducers(input: Dataset[CropsData], category: String, year: Int): Dataset[CropsData] = { //top productive year in world
