@@ -86,13 +86,15 @@ object Main {
     val statistics = new ProductStats
 
     val input = createDS(sparkSession, file)
+    val srcDir = "/storage/report"
+    val dstFile = "/storage/sparkAppReport1.txt"
 
     val minMaxAvg = statistics.getMinMaxAvd(input, category, country)
     minMaxAvg.write
       .format("csv")
       .option("header", "true")
       .option("delimiter", "\t")
-      .save("report")
+      .save(srcDir)
 
     val topProducers = statistics.getTopProducers(input, category, year)
     topProducers
@@ -101,7 +103,7 @@ object Main {
       .option("header", "true")
       .option("delimiter", "\t")
       .mode("append")
-      .save("report")
+      .save(srcDir)
 
     val topYear = statistics.getTopYear(input, category, country)
     topYear
@@ -110,7 +112,7 @@ object Main {
       .option("header", "true")
       .option("delimiter", "\t")
       .mode("append")
-      .save("report")
+      .save(srcDir)
 
     val totalProduction = statistics.getTotalProduction(input, category, year)
     totalProduction.write
@@ -118,12 +120,9 @@ object Main {
       .mode("append")
       .option("header", "true")
       .option("delimiter", "\t")
-      .save("report")
+      .save(srcDir)
 
-    val src = "/user/hdfs/report"
-    val dst = "/user/hdfs/sparkAppReport1.txt"
-
-    merge(src, dst)
+    merge(srcDir, dstFile)
 
     sparkSession.stop()
   }
