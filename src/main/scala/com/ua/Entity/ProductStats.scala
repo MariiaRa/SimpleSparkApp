@@ -3,7 +3,7 @@ package com.ua.Entity
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, Dataset}
 
-class ProductStats{
+class ProductStats {
 
   /**
     *
